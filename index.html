@@ -1,0 +1,215 @@
+<html>
+    <head>
+        <title>CMC Folio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    </head>
+    <body>
+        <main id="app" class="container">
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input placeholder="Coin/Token" type="text" class="autocomplete">
+                        </div>
+                        <div class="input-field col s4">
+                            <input id="cost" type="number">
+                        </div>
+                        <div class="input-field col s4">
+                            <select id="unit">
+                                <option value="BTC">BTC</option>
+                                <option value="USD">USD</option>
+                            </select>
+                            <label>Unit</label>
+                        </div>
+                        <div class="input-field col s4">
+                            <select id="typeCost">
+                                <option value="1">per unit</option>
+                                <option value="2">total cost</option>
+                            </select>
+                            <label>Type cost</label>
+                        </div>
+                        <div class="input-field col s12">
+                            <input id="coins" placeholder="Coins/Tokens" type="number">
+                        </div>
+                    </div>
+                    <a style="width:100%" @click="add" class="waves-effect waves-light btn green">add</a>
+                </form>
+            </div>
+
+            <!-- list -->
+            <div class="row" v-if="portfolio.length && loaded">
+                <div class="col s12 card-panel center-align" v-for="(investment,id) in portfolio" v-if="investment!=null">
+                    <img style="margin-top:5px;" v-bind:src='getImg(id)' />
+                    <h4>{{investment.name}}</h4>
+                    Cost Price: {{investment.cost}} {{investment.unit}}
+                    <br> Market Price:
+                    <strong v-if="investment.unit == 'USD'" class="green-text">{{Math.round(ticker[id].quotes.USD.price * 1000000) / 1000000}} USD</strong>
+                    <strong v-else class="orange-text">{{Math.round(ticker[id].quotes.BTC.price * 100000000) / 100000000}} BTC</strong>
+                    <br>
+                    <strong v-bind:class="{'red-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 < 0) , 'green-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 >= 0)}">
+                        <span>P/L: </span>
+                        {{ Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100}}%
+                    </strong>
+                    <br>
+                    <br>
+                    <a @click="remove(id)" class="btn-floating white btn-small"><i class="material-icons black">remove</i></a>
+                </div>
+            </div>
+            <strong>Donations:</strong>
+            <br><a class="modal-trigger" href="#modal1" @click="qr('3ALFrkUYtbB29LbLfgkmcEedEBEvJDnkc9')">BTC: 3ALFrkUYtbB29LbLfgkmcEedEBEvJDnkc9</a>
+            <br><a class="modal-trigger" href="#modal1" @click="qr('0xe9349942f7f7300Be3B06dB5b0c0c14b99070446')">ETH: 0xe9349942f7f7300Be3B06dB5b0c0c14b99070446</a>
+            <br><a class="modal-trigger" href="#modal1" @click="qr('LPtNB64u1MM3pr1KRDkNqwR6Bv8xhB3kJR')">LTC: LPtNB64u1MM3pr1KRDkNqwR6Bv8xhB3kJR</a>
+            <br><a class="modal-trigger" href="#modal1" @click="qr('1LtJyNW9Fsh4NbGSRWyXNzaJha9KNbC7xn')">BCH: 1LtJyNW9Fsh4NbGSRWyXNzaJha9KNbC7xn</a>
+
+            <div id="modal1" class="modal">
+                <div class="modal-content center-align">
+                    <p id="donateCurrency">QR</p>
+                    <p id="qr"></p>
+                </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                </div>
+            </div>
+
+        </main>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-128506660-1"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-128506660-1');
+        </script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+        <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script>
+
+            var app = new Vue({
+            el: '#app',
+            methods: {
+                remove: function(id) {
+                    
+                    this.portfolio[id] = null;
+                    if(!this.portfolio.filter((a)=> {return a;}).length)
+                        this.portfolio[id] = null;
+                    var portfolio = this.portfolio.slice();
+                    this.portfolio = [];
+                    this.portfolio = portfolio;
+                },
+                getImg: function(id) {
+                    return "https://s2.coinmarketcap.com/static/img/coins/32x32/"+id+".png";
+                },
+                add: function() {
+                    var name = this.autocompleteInstances[0].el.value.split("(")[0].slice(0,-1);
+                    var symbol = this.autocompleteInstances[0].el.value.split("(")[1].split(")")[0];
+                    this.coins.forEach((coin)=>{
+                        if(coin.name == name && coin.symbol == symbol) {
+                            axios.get('https://api.coinmarketcap.com/v2/ticker/'+coin.id+'/?convert=BTC')
+                            .then((response) => {
+                                this.ticker[coin.id] = response.data.data;
+                                if(!this.portfolio.length) this.portfolio = [];
+                            this.portfolio[coin.id] = {
+                                name: coin.name,
+                                symbol: coin.symbol,
+                                typeCost: $("#typeCost").val(),
+                                cost: $("#typeCost").val() == "1" ? parseFloat($("#cost").val()) : Math.round( ($("#cost").val() / $("#coins").val()) * 100000000) / 100000000,
+                                unit: $("#unit").val(),
+                                coins: $("#coins").val()
+                            }
+                            var portfolio = this.portfolio.slice();
+                            this.portfolio = [];
+                            this.portfolio = portfolio;
+                            })
+                        .catch((error)=>{
+                                
+                        });
+                        }
+                    });
+                },
+                qr: function(address) {
+                    $('#donateCurrency').text(address);
+                    $('#qr').qrcode(address);
+                }
+            },
+            data () {
+                return {
+                    coins: null,
+                    ticker: {},
+                    autocompleteInstances: null,
+                    selectInstances: null,
+                    selected: null,
+                    portfolio: [],
+                    loaded: false
+                }
+            },
+            watch: {
+                portfolio: {
+                    handler() {
+                        
+                        localStorage.setItem('portfolio', JSON.stringify(this.portfolio));
+                    },
+                    deep: true,
+                },
+            },
+            mounted () {
+                var elems5 = document.querySelectorAll('.modal');
+                var instances = M.Modal.init(elems5, {
+                    onCloseStart: function(){
+                        document.getElementById("qr").innerHTML = "";
+                    }
+                });
+                if (localStorage.getItem('portfolio'))
+                    this.portfolio = JSON.parse(localStorage.getItem('portfolio'));
+                axios
+                    .get('https://api.coinmarketcap.com/v2/listings/')
+                    .then((response) => {
+                        var data = [];
+                        this.coins = response.data.data;
+                        response.data.data.forEach((coin)=>{
+                            data[coin.name+" ("+coin.symbol+")"] = this.getImg(coin.id);
+                        });
+                        var elems = document.querySelectorAll('.autocomplete');
+                        this.autocompleteInstances = M.Autocomplete.init(elems,{data});
+                        var elems = document.querySelectorAll('select');
+                        this.selectInstances = M.FormSelect.init(elems);
+                    });
+                var promises = [];
+                this.portfolio.forEach((coin,id)=>{
+                    if(coin != null) {
+                        promises.push(new Promise((resolve,reject)=>{
+                            axios
+                                .get('https://api.coinmarketcap.com/v2/ticker/'+id+'/?convert=BTC')
+                                .then((response) => {
+                                        this.ticker[id] = response.data.data;
+                                        resolve(true);
+                                    })
+                                .catch((error)=>{
+                                        reject(false);
+                                });
+                        }));
+                    }
+                });
+                Promise.all(promises)
+                    .then((results)=>{
+                        this.loaded = true;
+                        console.log(true);
+                    })
+                    .catch((results)=>{
+                        this.loaded = true;
+                    });
+                }
+            }
+            );
+        </script>
+    </body>
+</html>
