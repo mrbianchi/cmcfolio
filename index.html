@@ -7,6 +7,33 @@
     </head>
     <body>
         <main id="app" class="container">
+            
+            <h2 class="center-align">CMCFolio</h2>
+            <hr>
+
+            <div class="row" v-if="portfolio.length && loaded">
+                <div class="col s12 card-panel center-align" v-for="(investment,id) in portfolio" v-if="investment!=null">
+                    <img style="margin-top:5px;" v-bind:src='getImg(id)' />
+                    <h4>{{investment.name}}</h4>
+                    Amount: {{investment.coins}} {{investment.symbol}}
+                    <br> Cost Price: {{investment.cost}} {{investment.unit}}
+                    <br> Market Price:
+                    <strong v-if="investment.unit == 'USD'" class="green-text">{{Math.round(ticker[id].quotes.USD.price * 1000000) / 1000000}} USD</strong>
+                    <strong v-else class="orange-text">{{Math.round(ticker[id].quotes.BTC.price * 100000000) / 100000000}} BTC</strong>
+                    <br>
+                    <strong v-bind:class="{'red-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 < 0) , 'green-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 >= 0)}">
+                        P/L:
+                        <span v-if="investment.unit == 'USD'">{{ Math.round( (ticker[id].quotes[investment.unit].price * investment.coins - investment.cost * investment.coins ) * 100)/100 }} USD </span>
+                        <span v-else>{{ Math.round((ticker[id].quotes[investment.unit].price * investment.coins - investment.cost * investment.coins )* 100000000)/100000000 }} BTC </span>
+                        ( {{ Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100}}% )
+                    </strong>
+                    <br>
+                    <br>
+                    <a @click="remove(id)" class="btn-floating white btn-small"><i class="material-icons black">remove</i></a>
+                    <br><br>
+                </div>
+            </div>
+
             <div class="row">
                 <form class="col s12">
                     <div class="row">
@@ -38,27 +65,7 @@
                 </form>
             </div>
 
-            <!-- list -->
-            <div class="row" v-if="portfolio.length && loaded">
-                <div class="col s12 card-panel center-align" v-for="(investment,id) in portfolio" v-if="investment!=null">
-                    <img style="margin-top:5px;" v-bind:src='getImg(id)' />
-                    <h4>{{investment.name}}</h4>
-                    asd
-                    Cost Price: {{investment.cost}} {{investment.unit}}
-                    <br> Market Price:
-                    <strong v-if="investment.unit == 'USD'" class="green-text">{{Math.round(ticker[id].quotes.USD.price * 1000000) / 1000000}} USD</strong>
-                    <strong v-else class="orange-text">{{Math.round(ticker[id].quotes.BTC.price * 100000000) / 100000000}} BTC</strong>
-                    <br>
-                    <strong v-bind:class="{'red-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 < 0) , 'green-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 >= 0)}">
-                        <span>P/L: </span>
-                        {{ Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100}}%
-                    </strong>
-                    <br>
-                    <br>
-                    <a @click="remove(id)" class="btn-floating white btn-small"><i class="material-icons black">remove</i></a>
-                </div>
-            </div>
-            <strong>Donations:</strong>
+            <strong>Donate :)</strong>
             <br><a class="modal-trigger" href="#modal1" @click="qr('3ALFrkUYtbB29LbLfgkmcEedEBEvJDnkc9')">BTC: 3ALFrkUYtbB29LbLfgkmcEedEBEvJDnkc9</a>
             <br><a class="modal-trigger" href="#modal1" @click="qr('0xe9349942f7f7300Be3B06dB5b0c0c14b99070446')">ETH: 0xe9349942f7f7300Be3B06dB5b0c0c14b99070446</a>
             <br><a class="modal-trigger" href="#modal1" @click="qr('LPtNB64u1MM3pr1KRDkNqwR6Bv8xhB3kJR')">LTC: LPtNB64u1MM3pr1KRDkNqwR6Bv8xhB3kJR</a>
