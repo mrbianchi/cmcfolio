@@ -43,6 +43,7 @@
                 <div class="col s12 card-panel center-align" v-for="(investment,id) in portfolio" v-if="investment!=null">
                     <img style="margin-top:5px;" v-bind:src='getImg(id)' />
                     <h4>{{investment.name}}</h4>
+                    asd
                     Cost Price: {{investment.cost}} {{investment.unit}}
                     <br> Market Price:
                     <strong v-if="investment.unit == 'USD'" class="green-text">{{Math.round(ticker[id].quotes.USD.price * 1000000) / 1000000}} USD</strong>
