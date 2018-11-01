@@ -6,7 +6,13 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     </head>
     <body>
-        <main id="app" class="container">
+       
+        <style>
+            [v-cloak] > * { display:none; }
+            [v-cloak]::before { content: "loading..."; }
+        </style>
+
+        <main id="app" class="container" v-cloak>
             
             <h2 class="center-align">CMCFolio</h2>
             <hr>
