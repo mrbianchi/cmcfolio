@@ -25,13 +25,17 @@
                     <br> Cost Price: {{investment.cost}} {{investment.unit}}
                     <br> Market Price:
                     <strong v-if="investment.unit == 'USD'" class="green-text">{{Math.round(ticker[id].quotes.USD.price * 1000000) / 1000000}} USD</strong>
-                    <strong v-else class="orange-text">{{Math.round(ticker[id].quotes.BTC.price * 100000000) / 100000000}} BTC</strong>
+                    <strong v-else-if="investment.unit == 'BTC'" class="orange-text">{{Math.round(ticker[id].quotes.BTC.price * 100000000) / 100000000}} BTC</strong>
+                    <strong v-else class="grey-text">{{Math.round(ticker[id].quotes.BTC.price / ethPrice * 100000000) / 100000000}} ETH</strong>
                     <br>
-                    <strong v-bind:class="{'red-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 < 0) , 'green-text': (Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 >= 0)}">
+                    <strong v-bind:class="{'red-text':  redText(investment,id), 'green-text': greenText(investment,id)}">
                         P/L:
                         <span v-if="investment.unit == 'USD'">{{ Math.round( (ticker[id].quotes[investment.unit].price * investment.coins - investment.cost * investment.coins ) * 100)/100 }} USD </span>
-                        <span v-else>{{ Math.round((ticker[id].quotes[investment.unit].price * investment.coins - investment.cost * investment.coins )* 100000000)/100000000 }} BTC </span>
-                        ( {{ Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100}}% )
+                        <span v-else-if="investment.unit == 'BTC'">{{ Math.round((ticker[id].quotes[investment.unit].price * investment.coins - investment.cost * investment.coins )* 100000000)/100000000 }} BTC </span>
+                        <span v-else>{{ Math.round((ticker[id].quotes.BTC.price / ethPrice  * investment.coins - investment.cost * investment.coins ) * 100000000)/100000000 }} ETH </span>
+                        
+                        <span v-if="investment.unit != 'ETH'">( {{ Math.round( (ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100}}% )</span>
+                        <span v-else>( {{ Math.round( (ticker[id].quotes.BTC.price / ethPrice * 100 / investment.cost - 100 ) * 100) / 100}}% )</span>
                     </strong>
                     <br>
                     <br>
@@ -53,6 +57,7 @@
                             <select id="unit">
                                 <option value="BTC">BTC</option>
                                 <option value="USD">USD</option>
+                                <option value="ETH">ETH</option>
                             </select>
                             <label>Unit</label>
                         </div>
@@ -104,7 +109,7 @@
             integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
             crossorigin="anonymous"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
         <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
         <script>
 
@@ -123,6 +128,19 @@
                 getImg: function(id) {
                     return "https://s2.coinmarketcap.com/static/img/coins/32x32/"+id+".png";
                 },
+                redText: function(investment,id) {
+                    console.log(this.ticker[id].quotes.BTC.price);
+                    if(investment.unit != 'ETH')
+                        return Math.round( (this.ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 < 0;
+                    else
+                        return Math.round( (this.ticker[id].quotes.BTC.price / this.ethPrice * 100 / investment.cost - 100 ) * 100) / 100 < 0;
+                },
+                greenText: function(investment,id) {
+                    if(investment.unit != 'ETH')
+                        return Math.round( (this.ticker[id].quotes[investment.unit].price * 100 / investment.cost - 100 ) * 100) / 100 >= 0;
+                    else
+                        return Math.round( (this.ticker[id].quotes.BTC.price / this.ethPrice * 100 / investment.cost - 100 ) * 100) / 100 >= 0;
+                },
                 add: function() {
                     var name = this.autocompleteInstances[0].el.value.split("(")[0].slice(0,-1);
                     var symbol = this.autocompleteInstances[0].el.value.split("(")[1].split(")")[0];
@@ -132,17 +150,24 @@
                             .then((response) => {
                                 this.ticker[coin.id] = response.data.data;
                                 if(!this.portfolio.length) this.portfolio = [];
+                                if($("#typeCost").val() == "1") {//per unit
+                                    var cost = parseFloat($("#cost").val());
+                                }else{//total cost
+                                    var cost = Math.round( ($("#cost").val() / $("#coins").val()) * 100000000) / 100000000;
+                                }
+
                             this.portfolio[coin.id] = {
                                 name: coin.name,
                                 symbol: coin.symbol,
                                 typeCost: $("#typeCost").val(),
-                                cost: $("#typeCost").val() == "1" ? parseFloat($("#cost").val()) : Math.round( ($("#cost").val() / $("#coins").val()) * 100000000) / 100000000,
+                                cost: cost,
                                 unit: $("#unit").val(),
                                 coins: $("#coins").val()
                             }
                             var portfolio = this.portfolio.slice();
                             this.portfolio = [];
                             this.portfolio = portfolio;
+                            console.log(this.portfolio);
                             })
                         .catch((error)=>{
                                 
@@ -159,6 +184,7 @@
                 return {
                     coins: null,
                     ticker: {},
+                    ethPrice: 0,
                     autocompleteInstances: null,
                     selectInstances: null,
                     selected: null,
@@ -213,10 +239,20 @@
                         }));
                     }
                 });
+                promises.push(new Promise((resolve,reject) => {
+                    axios
+                        .get('https://api.coinmarketcap.com/v2/ticker/1027/?convert=BTC')
+                        .then((response) => {
+                                this.ethPrice = response.data.data.quotes.BTC.price;
+                                resolve(true);
+                            })
+                        .catch((error)=>{
+                                reject(false);
+                        });
+                }))
                 Promise.all(promises)
                     .then((results)=>{
                         this.loaded = true;
-                        console.log(true);
                     })
                     .catch((results)=>{
                         this.loaded = true;
